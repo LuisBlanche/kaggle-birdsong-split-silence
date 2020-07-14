@@ -1,5 +1,6 @@
 pandas
 numpy
 joblib
+numba==0.48
 librosa
 soundfile

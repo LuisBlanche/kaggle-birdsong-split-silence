@@ -8,7 +8,6 @@ from pathlib import Path
 from joblib import delayed, Parallel
 
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(message)s")
-
 ROOT = Path.cwd().parent
 DATA = ROOT / "data"
 INPUT_DATA = DATA / "input"
@@ -113,9 +112,8 @@ def get_train_list():
     return train_list
 
 
-if __name__ == "main":
+def main():
     train_list = get_train_list()
-
     for i in range(5):
         logging.debug("Treating {TRAIN_AUDIO_DIRS[i]}")
         for ebird_code in train_list[i].ebird_code.unique():
@@ -137,3 +135,7 @@ if __name__ == "main":
             )
             for ebird_code, file_name in train_audio_infos
         )
+
+
+main()
+
