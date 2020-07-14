@@ -1,8 +1,11 @@
- import random
- import numpy as np 
- import librosa 
- import soundfile as sf 
- from pathlib import Path
+import random
+import numpy as np 
+import pandas as pd
+
+import librosa 
+import soundfile as sf 
+from pathlib import Path		
+from joblib import delayed, Parallel
  
 ROOT = Path.cwd().parent
 INPUT_ROOT = ROOT / "data"
@@ -35,7 +38,7 @@ for ebird_code in train.ebird_code.unique():
     return x, sr, x_split
 		
 	
-def split_singing_background(clip):
+def split_singing_background(clip, sample='background'):
     """Removes silence from clip
     """
     intervals = split_sound(clip)
@@ -44,14 +47,20 @@ def split_singing_background(clip):
     for i in range(len(intervals)-1):
         background = np.append(background, clip[intervals[i][1]:intervals[i+1][0]])
     background = np.append(background, clip[intervals[-1][1]:])
-    background = take_random_sample(background)
+   
     for inter in intervals:
         singing.extend(clip[inter[0]:inter[1]])
     singing = np.array(singing)
-    singing = take_random_sample(singing)
+    if sample = 'background':
+	background = take_random_sample(background)
+    elif sample = 'all':
+	silence = take_random_sample(silence)
+	singing = take_random_sample(singing)
+    else: 
+	print('nn sampling') 
     return singing , silence
 		
-	def remove_silence_from_file(ebird_code: str, filename: str, source_dir: str, target_sr: int = 32000):
+	def remove_silence_from_file(ebird_code: str, filename: str, source_dir: str, target_sr: int = 32000, sample: str = 'background'):
     ebird_dir = TRAIN_SINGING_DIR / ebird_code
     background_dir = TRAIN_BACKGROUND_DIR / ebird_code
     filename = filename.replace('.mp3', '.wav')
@@ -68,3 +77,18 @@ def split_singing_background(clip):
             file_path = str(source_dir / ebird_code / filename)
             f.write(file_path + ' ' + str(e) + "\n")
 		
+
+
+if __name__ == 'main': 
+  train = pd.read_csv("data/birdsong-recognition/train.csv", parse_dates=['date'])
+  train_list = [train[train['ebird_code'].str.startswith(('a', 'b))],  
+                train[train['ebird_code'].str.startswith(('c', 'd', 'e', 'f'))],
+                train[train['ebird_code'].str.startswith(('g' , 'h', 'i', 'j', 'k', 'l', 'm'))],
+                train[train['ebird_code'].str.startswith(('n', 'o', 'p', 'q', 'r'))],
+                train[train['ebird_code'].str.startswith(('s', 't', 'u', 'v', 'w', 'x', 'y', 'z'))]
+               ]
+  for i in range(5): 
+      train_audio_infos = train_list[i][["ebird_code", "filename"]].values.tolist()
+      source_dir = TRAIN_RESAMPLED_AUDIO_DIRS[i]
+      Parallel(n_jobs=-1, verbose=5)(
+           delayed(remove_silence_from_file)(ebird_code, file_name, source_dir) for ebird_code, file_name in train_audio_infos)
