@@ -6,6 +6,10 @@ import librosa
 import soundfile as sf
 from pathlib import Path
 from joblib import delayed, Parallel
+import warnings
+
+warnings.filterwarnings("ignore")
+
 
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(message)s")
 ROOT = Path.cwd().parent
@@ -119,8 +123,8 @@ def main():
         for ebird_code in train_list[i].ebird_code.unique():
             ebird_dir = TRAIN_SINGING_DIRS[i] / ebird_code
             background_dir = TRAIN_BACKGROUND_DIRS[i] / ebird_code
-            ebird_dir.mkdir(exist_ok=True)
-            background_dir.mkdir(exist_ok=True)
+            ebird_dir.mkdir(exist_ok=True, parents=True)
+            background_dir.mkdir(exist_ok=True, parents=True)
         train_audio_infos = train_list[i][["ebird_code", "filename"]].values.tolist()
         source_dir = TRAIN_AUDIO_DIRS[i]
         singing_output_dir = TRAIN_SINGING_DIRS[i]
@@ -138,4 +142,3 @@ def main():
 
 
 main()
-
