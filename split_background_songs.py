@@ -9,22 +9,13 @@ from joblib import delayed, Parallel
  
 ROOT = Path.cwd().parent
 INPUT_ROOT = ROOT / "data"
-RAW_DATA = INPUT_ROOT / "birdsong-recognition"
+RAW_DATA = INPUT_ROOT / "input/"
 TRAIN_AUDIO_DIR = RAW_DATA / "train_audio"
-TRAIN_RESAMPLED_AUDIO_DIRS = [
-  INPUT_ROOT / "birdsong-resampled-train-audio-{:0>2}".format(i)  for i in range(5)
-]
-
 TRAIN_SINGING_DIR = Path("processed_data/train_audio_singing")
 TRAIN_BACKGROUND_DIR = Path("processed_data/train_audio_background")
 TRAIN_SINGING_DIR.mkdir(parents=True, exist_ok=True)
 TRAIN_BACKGROUND_DIR.mkdir(parents=True, exist_ok=True)
-for ebird_code in train.ebird_code.unique():
-    ebird_dir = TRAIN_SINGING_DIR / ebird_code
-    background_dir = TRAIN_BACKGROUND_DIR / ebird_code
-    ebird_dir.mkdir(exist_ok=True)
-    background_dir.mkdir(exist_ok=True)
- 
+
  def split_sound(row_number):
     """Returns the sound array, sample rate and
     x_split = intervals where sound is louder than top db
@@ -57,7 +48,7 @@ def split_singing_background(clip, sample='background'):
 	silence = take_random_sample(silence)
 	singing = take_random_sample(singing)
     else: 
-	print('nn sampling') 
+	print('no sampling') 
     return singing , silence
 		
 	def remove_silence_from_file(ebird_code: str, filename: str, source_dir: str, target_sr: int = 32000, sample: str = 'background'):
@@ -80,15 +71,12 @@ def split_singing_background(clip, sample='background'):
 
 
 if __name__ == 'main': 
-  train = pd.read_csv("data/birdsong-recognition/train.csv", parse_dates=['date'])
-  train_list = [train[train['ebird_code'].str.startswith(('a', 'b))],  
-                train[train['ebird_code'].str.startswith(('c', 'd', 'e', 'f'))],
-                train[train['ebird_code'].str.startswith(('g' , 'h', 'i', 'j', 'k', 'l', 'm'))],
-                train[train['ebird_code'].str.startswith(('n', 'o', 'p', 'q', 'r'))],
-                train[train['ebird_code'].str.startswith(('s', 't', 'u', 'v', 'w', 'x', 'y', 'z'))]
-               ]
-  for i in range(5): 
-      train_audio_infos = train_list[i][["ebird_code", "filename"]].values.tolist()
-      source_dir = TRAIN_RESAMPLED_AUDIO_DIRS[i]
-      Parallel(n_jobs=-1, verbose=5)(
-           delayed(remove_silence_from_file)(ebird_code, file_name, source_dir) for ebird_code, file_name in train_audio_infos)
+	for ebird_code in train.ebird_code.unique():
+	    ebird_dir = TRAIN_SINGING_DIR / ebird_code
+	    background_dir = TRAIN_BACKGROUND_DIR / ebird_code
+	    ebird_dir.mkdir(exist_ok=True)
+	    background_dir.mkdir(exist_ok=True)
+	train = pd.read_csv("data/birdsong-recognition/train.csv", parse_dates=['date'])
+	train_audio_infos = train[["ebird_code", "filename"]].values.tolist()
+	source_dir = TRAIN_AUDIO_DIR
+	Parallel(n_jobs=-1, verbose=5)(delayed(remove_silence_from_file)(ebird_code, file_name, source_dir) for ebird_code, file_name in train_audio_infos)
