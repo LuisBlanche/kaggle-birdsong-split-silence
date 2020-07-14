@@ -8,13 +8,14 @@ from pathlib import Path
 from joblib import delayed, Parallel
  
 ROOT = Path.cwd().parent
-INPUT_ROOT = ROOT / "data"
-RAW_DATA = INPUT_ROOT / "input/"
-TRAIN_AUDIO_DIR = RAW_DATA / "train_audio"
-TRAIN_SINGING_DIR = Path("processed_data/train_audio_singing")
-TRAIN_BACKGROUND_DIR = Path("processed_data/train_audio_background")
-TRAIN_SINGING_DIR.mkdir(parents=True, exist_ok=True)
-TRAIN_BACKGROUND_DIR.mkdir(parents=True, exist_ok=True)
+DATA = ROOT / "data"
+INPUT_DATA = DATA / "input"
+TRAIN_AUDIO_DIRS = [
+  INPUT_DATA / folder for folder in ["1_a-b", "2_c-f", "3_g-m", "4_n-r", "5_s-y"]
+
+OUTPUT_DATA = DATA / "output"
+TRAIN_SINGING_DIRS = [OUTPUT_DATA / "singing" / folder for folder in ["1_a-b", "2_c-f", "3_g-m", "4_n-r", "5_s-y"]
+TRAIN_BACKGROUND_DIRS = [OUTPUT_DATA / "background" /folder for folder in ["1_a-b", "2_c-f", "3_g-m", "4_n-r", "5_s-y"]
 
  def split_sound(row_number):
     """Returns the sound array, sample rate and
@@ -51,8 +52,8 @@ def split_singing_background(clip, sample='background'):
 	print('no sampling') 
     return singing , silence
 		
-	def remove_silence_from_file(ebird_code: str, filename: str, source_dir: str, target_sr: int = 32000, sample: str = 'background'):
-    ebird_dir = TRAIN_SINGING_DIR / ebird_code
+	def remove_silence_from_file(ebird_code, filename, source_dir, singing_dir, background_dir, target_sr=32000, sample='background'):
+    singing_dir = TRAIN_SINGING_DIR / ebird_code
     background_dir = TRAIN_BACKGROUND_DIR / ebird_code
     filename = filename.replace('.mp3', '.wav')
     try:
@@ -60,8 +61,8 @@ def split_singing_background(clip, sample='background'):
             source_dir / ebird_code / filename,
             sr=target_sr, mono=True, res_type="kaiser_fast")
         sound, background = split_singing_background(y)
-        sf.write(str(ebird_dir / filename), sound, target_sr)
-        sf.write(str(background_dir / filename), background, target_sr)
+        sf.write(str(dest_dir/ ebird_dir / filename), sound, target_sr)
+        sf.write(str(dest_dir/ background_dir / filename), background, target_sr)
     except Exception as e:
         print(e)
         with open("skipped.txt", "a") as f:
@@ -70,13 +71,26 @@ def split_singing_background(clip, sample='background'):
 		
 
 
-if __name__ == 'main': 
-	for ebird_code in train.ebird_code.unique():
-	    ebird_dir = TRAIN_SINGING_DIR / ebird_code
-	    background_dir = TRAIN_BACKGROUND_DIR / ebird_code
-	    ebird_dir.mkdir(exist_ok=True)
-	    background_dir.mkdir(exist_ok=True)
-	train = pd.read_csv("data/birdsong-recognition/train.csv", parse_dates=['date'])
-	train_audio_infos = train[["ebird_code", "filename"]].values.tolist()
-	source_dir = TRAIN_AUDIO_DIR
-	Parallel(n_jobs=-1, verbose=5)(delayed(remove_silence_from_file)(ebird_code, file_name, source_dir) for ebird_code, file_name in train_audio_infos)
+if __name__ == 'main':
+	train = pd.read_csv("data/train.csv", parse_dates=['date'])
+	train_list = [train[train['ebird_code'].str.startswith(('a', 'b))], 
+              train[train['ebird_code'].str.startswith(('c', 'd', 'e', 'f'))],
+              train[train['ebird_code'].str.startswith(('g', 'h', 'i', 'j', 'k', 'l', 'm'))],
+              train[train['ebird_code'].str.startswith(('n', 'o', 'p', 'q', 'r'))],
+              train[train['ebird_code'].str.startswith(('s', 't', 'u', 'v', 'w', 'x', 'y', 'z'))]
+             ]
+	for i in range(5):
+		for ebird_code in train_list[i].ebird_code.unique():
+		    ebird_dir = TRAIN_SINGING_DIRS[i] / ebird_code
+		    background_dir = TRAIN_BACKGROUND_DIRS[i] / ebird_code
+		    ebird_dir.mkdir(exist_ok=True)
+		    background_dir.mkdir(exist_ok=True)
+		train_audio_infos = train_list[i][["ebird_code", "filename"]].values.tolist()
+		source_dir = TRAIN_AUDIO_DIRS[i]
+		singing_output_dir = TRAIN_SINGING_DIRS[i]
+		background_output_dir = TRAIN_BACKGROUND_DIRS[i]				
+		Parallel(n_jobs=-1, verbose=5)(delayed(remove_silence_from_file)(ebird_code, 
+										 file_name,
+										 source_dir, 
+										 singing_output_dir, 
+										 background_output_dir) for ebird_code, file_name in train_audio_infos)
