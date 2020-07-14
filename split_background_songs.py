@@ -12,22 +12,20 @@ DATA = ROOT / "data"
 INPUT_DATA = DATA / "input"
 TRAIN_AUDIO_DIRS = [
   INPUT_DATA / folder for folder in ["1_a-b", "2_c-f", "3_g-m", "4_n-r", "5_s-y"]
-
+  ]
 OUTPUT_DATA = DATA / "output"
-TRAIN_SINGING_DIRS = [OUTPUT_DATA / "singing" / folder for folder in ["1_a-b", "2_c-f", "3_g-m", "4_n-r", "5_s-y"]
-TRAIN_BACKGROUND_DIRS = [OUTPUT_DATA / "background" /folder for folder in ["1_a-b", "2_c-f", "3_g-m", "4_n-r", "5_s-y"]
+TRAIN_SINGING_DIRS = [OUTPUT_DATA / "singing" / folder for folder in ["1_a-b", "2_c-f", "3_g-m", "4_n-r", "5_s-y"]]
+TRAIN_BACKGROUND_DIRS = [OUTPUT_DATA / "background" /folder for folder in ["1_a-b", "2_c-f", "3_g-m", "4_n-r", "5_s-y"]]
 
- def split_sound(row_number):
+def split_sound(clip):
     """Returns the sound array, sample rate and
     x_split = intervals where sound is louder than top db
     """
-    species, audio_path = get_audio_path(row_number)
-    x , sr = librosa.load(audio_path)
-    db = librosa.core.amplitude_to_db(x)
+    db = librosa.core.amplitude_to_db(clip)
     mean_db = np.abs(db).mean()
     std_db = db.std()
     x_split = librosa.effects.split(y=x, top_db = mean_db - std_db)
-    return x, sr, x_split
+    return x_split
 		
 	
 def split_singing_background(clip, sample='background'):
@@ -43,16 +41,16 @@ def split_singing_background(clip, sample='background'):
     for inter in intervals:
         singing.extend(clip[inter[0]:inter[1]])
     singing = np.array(singing)
-    if sample = 'background':
+    if sample == 'background':
 	background = take_random_sample(background)
-    elif sample = 'all':
+    elif sample == 'all':
 	silence = take_random_sample(silence)
 	singing = take_random_sample(singing)
     else: 
 	print('no sampling') 
     return singing , silence
 		
-	def remove_silence_from_file(ebird_code, filename, source_dir, singing_dir, background_dir, target_sr=32000, sample='background'):
+def remove_silence_from_file(ebird_code, filename, source_dir, singing_dir, background_dir, target_sr=32000, sample='background'):
     singing_dir = TRAIN_SINGING_DIR / ebird_code
     background_dir = TRAIN_BACKGROUND_DIR / ebird_code
     filename = filename.replace('.mp3', '.wav')
@@ -73,7 +71,7 @@ def split_singing_background(clip, sample='background'):
 
 if __name__ == 'main':
 	train = pd.read_csv("data/train.csv", parse_dates=['date'])
-	train_list = [train[train['ebird_code'].str.startswith(('a', 'b))], 
+	train_list = [train[train['ebird_code'].str.startswith(('a', 'b'))], 
               train[train['ebird_code'].str.startswith(('c', 'd', 'e', 'f'))],
               train[train['ebird_code'].str.startswith(('g', 'h', 'i', 'j', 'k', 'l', 'm'))],
               train[train['ebird_code'].str.startswith(('n', 'o', 'p', 'q', 'r'))],
