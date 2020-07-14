@@ -1,4 +1,7 @@
 *.zip 
 *.wav
+.venv
 *.pyc
+.venv
+.wav
 

@@ -1,7 +1,7 @@
-kaggle datasets download ttahara/birdsong-resampled-train-audio-00 -p data & 
-kaggle datasets download ttahara/birdsong-resampled-train-audio-01 -p data &
-kaggle datasets download ttahara/birdsong-resampled-train-audio-02 -p data &
-kaggle datasets download ttahara/birdsong-resampled-train-audio-03 -p data &
+for ds_part in {0..4}
+do 
+kaggle datasets download ttahara/birdsong-resampled-train-audio-0{$ds_part} -p data &
+unzip data/birdsong-resampled-train-audio-0{$ds_part}.zip -d data/input
+rm data/birdsong-resampled-train-audio-0{$ds_part}.zip
 kaggle competitions download -f train.csv birdsong-recognition -p data &
-unzip ./data/*.zip -p data/input & 
-
+unzip data/train.csv.zip -d data/input
