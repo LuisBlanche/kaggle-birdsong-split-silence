@@ -1,11 +1,13 @@
 import random
 import numpy as np
 import pandas as pd
-
+import logging
 import librosa
 import soundfile as sf
 from pathlib import Path
 from joblib import delayed, Parallel
+
+logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(message)s")
 
 ROOT = Path.cwd().parent
 DATA = ROOT / "data"
@@ -96,8 +98,9 @@ def remove_silence_from_file(
             f.write(file_path + " " + str(e) + "\n")
 
 
-if __name__ == "main":
+def get_train_list():
     train = pd.read_csv("data/train.csv", parse_dates=["date"])
+    logging.debug(f"train shape = {train.shape}")
     train_list = [
         train[train["ebird_code"].str.startswith(("a", "b"))],
         train[train["ebird_code"].str.startswith(("c", "d", "e", "f"))],
@@ -107,7 +110,14 @@ if __name__ == "main":
             train["ebird_code"].str.startswith(("s", "t", "u", "v", "w", "x", "y", "z"))
         ],
     ]
+    return train_list
+
+
+if __name__ == "main":
+    train_list = get_train_list()
+
     for i in range(5):
+        logging.debug("Treating {TRAIN_AUDIO_DIRS[i]}")
         for ebird_code in train_list[i].ebird_code.unique():
             ebird_dir = TRAIN_SINGING_DIRS[i] / ebird_code
             background_dir = TRAIN_BACKGROUND_DIRS[i] / ebird_code
